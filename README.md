@@ -81,7 +81,7 @@ effort controller interface:
 
 Done. The robot should now move in velocity or effort control mode with the desired speed/torque.
 
-## Create map with gmapping 
+## Create a map with gmapping 
 
 A modified version of the R2D2 model which is more bottom heavy will be used for this allowing the robot to move faster without toppling 
 
@@ -116,7 +116,7 @@ This launhced Rviz with the requires setting for viuslizing. Move the robot arou
 
 
 
-## Using move_base 
+## Using move_base for navigation
 
 The setting needed for move_base is given as an example here 
 
