@@ -14,11 +14,11 @@
    
 
     
-    <param name="linearUpdate" value="0.5"/>
-    <param name="angularUpdate" value="0.436"/>
-    <param name="temporalUpdate" value="-1.0"/>
-    <param name="resampleThreshold" value="0.5"/>
-    <param name="particles" value="80"/>
+    <param name="linearUpdate" value="0.05"/>
+    <param name="angularUpdate" value="0.0436"/>
+    <param name="temporalUpdate" value="0.1"/>
+    <param name="resampleThreshold" value="0.1"/>
+    <param name="particles" value="180"/>
 
   </node>
 

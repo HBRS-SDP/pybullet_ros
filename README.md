@@ -86,38 +86,36 @@ Done. The robot should now move in velocity or effort control mode with the desi
 A modified version of the R2D2 model which is more bottom heavy will be used for this allowing the robot to move faster without toppling 
 
 For this to work you may have to install the following
-
-sudo apt-get install ros-noetic-turtlebot3-msgs
-sudo apt-get install ros-noetic-turtlebot3
-sudo apt-get install ros-noetic-openslam-gmapping
-
+```
+sudo apt-get install ros-noetic-turtlebot3-msgs ros-noetic-turtlebot3 ros-noetic-openslam-gmapping ros-noetic-gmapping
+```
 Steps to run a demo gmapping 
 
 - In a new terminal run 
 
-        roslaunch pybullet_ros move_base_sim.launch 
+```roslaunch pybullet_ros move_base_sim.launch```
 
 This will launch pybullet with bottom heavy R2D2 robot and a lab enviroment
 
 - In a another terminal run the follwoing command to start gmapping
 
-        roslaunch pybullet_ros move_base_gmapping_v1.launch 
+```roslaunch pybullet_ros move_base_gmapping_v1.launch```
 
 - In a new termainal run
 
-        roslaunch pybullet_ros move_base_teleop_v1.launch 
+```roslaunch pybullet_ros move_base_teleop_v1.launch```
 
 This will start a teleop so that you can move around the robot
 
 - In a new terminal start Rviz with the following command
 
-        roslaunch pybullet_ros move_base_rviz_v1.launch 
+```roslaunch pybullet_ros move_base_rviz_v1.launch```
 
 This launhced Rviz with the requires setting for viuslizing. Move the robot around until you have a good map of the area
 
 - cd in to the required folder and run the following example command to save the map
 
-        rosrun map_server map_saver -f ~/<directory>/<name of map>
+```rosrun map_server map_saver -f ~/<directory>/<name of map>```
 
 
 
