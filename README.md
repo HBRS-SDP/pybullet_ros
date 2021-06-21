@@ -85,6 +85,11 @@ Done. The robot should now move in velocity or effort control mode with the desi
 
 A modified version of the R2D2 model which is more bottom heavy will be used for this allowing the robot to move faster without toppling 
 
+For this to work you may have to install the following
+
+sudo apt-get install ros-noetic-turtlebot3-msgs
+sudo apt-get install ros-noetic-turtlebot3
+sudo apt-get install ros-noetic-openslam-gmapping
 
 Steps to run a demo gmapping 
 
