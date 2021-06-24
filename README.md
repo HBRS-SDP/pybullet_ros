@@ -134,6 +134,21 @@ The setting needed for move_base is given as an example here
 
         roslaunch pybullet_ros move_base_sim.launch 
 
+- The run the map server to start using the map need for navigation
+
+        rosrun map_server map_server <directory>/<map_name>
+- Next run run amcl for navigation and localization
+
+        roslaunch pybullet_ros move_base_amcl.launch
+
+- Now run rviz to send 2D goals
+
+        roslaunch pybullet_ros move_base_rviz_amcl.launch 
+
+- Now send 2D navigation goals to the robot. You can use this or use the python move_base client to send navigation goals using the following command
+
+        rosrun pybullet_ros move_base_client_v1.py
+
 
 ## Visualize tf data and robot model in rviz
 
