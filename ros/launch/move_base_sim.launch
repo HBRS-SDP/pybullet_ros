@@ -8,7 +8,7 @@
     <!-- e.g. from my_ros_pkg.my_env import Environment ; "my_env" is what you set in environment param below-->
     <arg name="plugin_import_prefix" default="pybullet_ros.plugins" />
     <!-- This file is in /home/ros_user/catkin_ws/src/pybullet_ros/ros/src/pybullet_ros/plugins/ -->
-    <arg name="environment" default="environment_CO25Lab" /> <!-- name of python file without the .py inside plugins folder -->
+    <arg name="environment" default="environment_test_world" /> <!-- name of python file without the .py inside plugins folder -->
     <arg name="pybullet_gui" default="True" />
     <arg name="robot_urdf_path" default="$(find pybullet_ros)/common/test/urdf/r2d2_robot/r2d2_bottom_heavy.urdf.xacro" />
     <arg name="pause_simulation" default="False" />
