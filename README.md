@@ -81,6 +81,14 @@ effort controller interface:
 
 Done. The robot should now move in velocity or effort control mode with the desired speed/torque.
 
+## Using MoveIt
+- First run the following to install move_it in your system. The example given below is for ros noetic distro
+
+
+        sudo apt update
+        sudo apt upgrade
+        sudo apt install-noetic-moveit
+
 ## Visualize tf data and robot model in rviz
 
 A convenient configuration file is provided for the visualization of the example robot, run it with:
