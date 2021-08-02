@@ -1,0 +1,17 @@
+pybullet_ros:
+    ros_parameters:
+        config_file: "path/to/file"
+        plugin_import_prefix: "pybullet_ros.plugins"
+        environment: "environment"
+        pybullet_gui: True
+        robot_urdf_path: "$(find pybullet_ros)/common/test/urdf/r2d2_robot/r2d2.urdf.xacro"
+        pause_simulation: False
+        parallel_plugin_execution: "True"
+        robot_pose_x: 0.0
+        robot_pose_y: 0.0
+        robot_pose_z: 0.7
+        robot_pose_yaw: 0.0
+        fixed_base: False
+        use_deformable_world: False
+        gui_options: ""
+
