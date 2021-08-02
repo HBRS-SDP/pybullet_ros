@@ -7,47 +7,68 @@ RGBD camera sensor simulation for pybullet_ros base on pybullet.getCameraImage()
 import math
 import numpy as np
 
-import rospy
+import rclpy
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
+
 class RGBDCamera:
-    def __init__(self, pybullet, robot, **kargs):
+    def __init__(self, pybullet, node, robot, **kargs):
         # get "import pybullet as pb" and store in self.pb
         self.pb = pybullet
+        self.node = node
+
+        self.node.declare_parameter('rgbd_camera/frame_id', None)
+        self.node.declare_parameter('rgbd_camera/resolution/width', 640)
+        self.node.declare_parameter('rgbd_camera/resolution/height', 480)
+        self.node.declare_parameter('rgbd_camera/resolution/encoding', 'rgb8')
+        self.node.declare_parameter('rgbd_camera/resolution/encoding/is_bigendian', 0)
+        self.node.declare_parameter('rgbd_camera/resolution/encoding/step', 1920)
+        self.node.declare_parameter('rgbd_camera/vfov', 43.7)
+        self.node.declare_parameter('rgbd_camera/hfov', 56.3)
+        self.node.declare_parameter('rgbd_camera/near_plane', 0.4)
+        self.node.declare_parameter('rgbd_camera/far_plane', 8)
+
         # get robot from parent class
         self.robot = robot
         # create image msg placeholder for publication
         self.image_msg = Image()
         # get RGBD camera parameters from ROS param server
-        self.image_msg.width = rospy.get_param('~rgbd_camera/resolution/width', 640)
-        self.image_msg.height = rospy.get_param('~rgbd_camera/resolution/height', 480)
+        self.image_msg.width = self.node.get_parameter('rgbd_camera/resolution/width').value
+        self.image_msg.height = self.node.get_parameter('rgbd_camera/resolution/height').value
+
         assert(self.image_msg.width > 5)
         assert(self.image_msg.height > 5)
-        cam_frame_id = rospy.get_param('~rgbd_camera/frame_id', None)
+
+        cam_frame_id = self.node.get_parameter('rgbd_camera/frame_id').value
         if not cam_frame_id:
-            rospy.logerr('Required parameter rgbd_camera/frame_id not set, will exit now...')
-            rospy.signal_shutdown('Required parameter rgbd_camera/frame_id not set')
+            self.node.get_logger().error('Required parameter rgbd_camera/frame_id not set, will exit now...')
+            rclpy.shutdown()
             return
         # get pybullet camera link id from its name
         link_names_to_ids_dic = kargs['link_ids']
         if not cam_frame_id in link_names_to_ids_dic:
-            rospy.logerr('Camera reference frame "{}" not found in URDF model'.format(cam_frame_id))
-            rospy.logwarn('Available frames are: {}'.format(link_names_to_ids_dic))
-            rospy.signal_shutdown('required param rgbd_camera/frame_id not set properly')
+            self.node.get_logger().error('Camera reference frame "{}" not found in URDF model'.format(cam_frame_id))
+            self.node.get_logger().error('Available frames are: {}'.format(link_names_to_ids_dic))
+            self.node.get_logger().error('required param rgbd_camera/frame_id not set properly')
+            rospy.shutdown()
             return
         self.pb_camera_link_id = link_names_to_ids_dic[cam_frame_id]
         self.image_msg.header.frame_id = cam_frame_id
         # create publisher
-        self.pub_image = rospy.Publisher('rgb_image', Image, queue_size=1)
-        self.image_msg.encoding = rospy.get_param('~rgbd_camera/resolution/encoding', 'rgb8')
-        self.image_msg.is_bigendian = rospy.get_param('~rgbd_camera/resolution/encoding', 0)
-        self.image_msg.step = rospy.get_param('~rgbd_camera/resolution/encoding', 1920)
+
+        self.pub_image = self.node.create_publisher(Image, 'rgb_image', 10)
+
+        self.image_msg.encoding = self.node.get_parameter('rgbd_camera/resolution/encoding').value
+        self.image_msg.is_bigendian = self.node.get_parameter('rgbd_camera/resolution/encoding/is_bigendian').value
+        self.image_msg.step = self.node.get_parameter('rgbd_camera/resolution/encoding/step').value
         # projection matrix
-        self.hfov = rospy.get_param('~rgbd_camera/hfov', 56.3)
-        self.vfov = rospy.get_param('~rgbd_camera/vfov', 43.7)
-        self.near_plane = rospy.get_param('~rgbd_camera/near_plane', 0.4)
-        self.far_plane = rospy.get_param('~rgbd_camera/far_plane', 8)
+
+        self.hfov = self.node.get_parameter('rgbd_camera/hfov')
+        self.vfov = self.node.get_parameter('rgbd_camera/vfov')
+        self.near_plane = self.node.get_parameter('rgbd_camera/near_plane')
+        self.far_plane = self.node.get_parameter('rgbd_camera/far_plane')
+
         self.projection_matrix = self.compute_projection_matrix()
         # use cv_bridge ros to convert cv matrix to ros format
         self.image_bridge = CvBridge()
@@ -56,12 +77,12 @@ class RGBDCamera:
 
     def compute_projection_matrix(self):
         return self.pb.computeProjectionMatrix(
-                    left=-math.tan(math.pi * self.hfov / 360.0) * self.near_plane,
-                    right=math.tan(math.pi * self.hfov / 360.0) * self.near_plane,
-                    bottom=-math.tan(math.pi * self.vfov / 360.0) * self.near_plane,
-                    top=math.tan(math.pi * self.vfov / 360.0) * self.near_plane,
-                    nearVal=self.near_plane,
-                    farVal=self.far_plane)
+            left=-math.tan(math.pi * self.hfov / 360.0) * self.near_plane,
+            right=math.tan(math.pi * self.hfov / 360.0) * self.near_plane,
+            bottom=-math.tan(math.pi * self.vfov / 360.0) * self.near_plane,
+            top=math.tan(math.pi * self.vfov / 360.0) * self.near_plane,
+            nearVal=self.near_plane,
+            farVal=self.far_plane)
 
     def extract_frame(self, camera_image):
         bgr_image = np.zeros((self.image_msg.height, self.image_msg.width, 3))
@@ -89,10 +110,10 @@ class RGBDCamera:
         This method is used to tranform it to the world reference frame
         NOTE: this method uses pybullet functions and not tf
         """
-        target_point = [5.0, 0, 0] # expressed w.r.t camera reference frame
+        target_point = [5.0, 0, 0]  # expressed w.r.t camera reference frame
         camera_position = [camera_position[0], camera_position[1], camera_position[2]]
         rm = self.pb.getMatrixFromQuaternion(camera_orientation)
-        rotation_matrix = [[rm[0], rm[1], rm[2]],[rm[3], rm[4], rm[5]],[rm[6], rm[7], rm[8]]]
+        rotation_matrix = [[rm[0], rm[1], rm[2]], [rm[3], rm[4], rm[5]], [rm[6], rm[7], rm[8]]]
         return np.dot(rotation_matrix, target_point) + camera_position
 
     def execute(self):
@@ -101,7 +122,7 @@ class RGBDCamera:
         self.count += 1
         if self.count < 100:
             return
-        self.count = 0 # reset count
+        self.count = 0  # reset count
         # get camera pose
         cam_state = self.pb.getLinkState(self.robot, self.pb_camera_link_id)
         # target is a point 5m ahead of the robot camera expressed w.r.t world reference frame
@@ -119,6 +140,6 @@ class RGBDCamera:
         # fill pixel data array
         self.image_msg.data = self.image_bridge.cv2_to_imgmsg(frame).data
         # update msg time stamp
-        self.image_msg.header.stamp = rospy.Time.now()
+        self.image_msg.header.stamp = self.node.get_clock().now().to_msg()
         # publish camera image to ROS network
         self.pub_image.publish(self.image_msg)

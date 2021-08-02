@@ -9,22 +9,27 @@ however cmd_vel convention required velocity to be expressed w.r.t. robot base f
 therefore a transformation is needed.
 """
 
-import rospy
+import rclpy
+from rclpy.node import Node
+
 import math
 import numpy as np
 
 from geometry_msgs.msg import Twist, Vector3Stamped, Vector3
 
+# from geometry_msgs.msg import Twist, Vector3Stamped, Vector3
+
+
 class cmdVelCtrl:
-    def __init__(self, pybullet, robot, **kargs):
+    def __init__(self, pybullet, node: Node, robot, **kargs):
         # get "import pybullet as pb" and store in self.pb
         self.pb = pybullet
+        self.node = node
         # get robot from parent class
         self.robot = robot
-        # subscribe to robot velocity commands
+        # subscribe to robot velocity commandstf
         self.cmd_vel_msg = None
-        self.received_cmd_vel_time = None
-        rospy.Subscriber("cmd_vel", Twist, self.cmdVelCB)
+        self.subscription = node.create_subscription(Twist, 'cmd_vel', self.cmdVelCB, 10)
 
     # ---------- tf stuff starts
 
@@ -45,10 +50,10 @@ class cmdVelCtrl:
         q = np.outer(q, q)
         return np.array((
             (1.0-q[1, 1]-q[2, 2],     q[0, 1]-q[2, 3],     q[0, 2]+q[1, 3], 0.0),
-            (    q[0, 1]+q[2, 3], 1.0-q[0, 0]-q[2, 2],     q[1, 2]-q[0, 3], 0.0),
-            (    q[0, 2]-q[1, 3],     q[1, 2]+q[0, 3], 1.0-q[0, 0]-q[1, 1], 0.0),
-            (                0.0,                 0.0,                 0.0, 1.0)
-            ), dtype=np.float64)
+            (q[0, 1]+q[2, 3], 1.0-q[0, 0]-q[2, 2],     q[1, 2]-q[0, 3], 0.0),
+            (q[0, 2]-q[1, 3],     q[1, 2]+q[0, 3], 1.0-q[0, 0]-q[1, 1], 0.0),
+            (0.0,                 0.0,                 0.0, 1.0)
+        ), dtype=np.float64)
 
     def fromTranslationRotation(self, translation, rotation):
         """copied from tf (listener.py)"""
@@ -65,15 +70,15 @@ class cmdVelCtrl:
 
     def asMatrix(self, target_frame, hdr):
         """copied from tf (listener.py)"""
-        translation,rotation = self.lookupTransform(target_frame, hdr.frame_id)
+        translation, rotation = self.lookupTransform(target_frame, hdr.frame_id)
         return self.fromTranslationRotation(translation, rotation)
 
     def transformVector3(self, target_frame, v3s):
         """copied from tf (listener.py)"""
         mat44 = self.asMatrix(target_frame, v3s.header)
-        mat44[0,3] = 0.0
-        mat44[1,3] = 0.0
-        mat44[2,3] = 0.0
+        mat44[0, 3] = 0.0
+        mat44[1, 3] = 0.0
+        mat44[2, 3] = 0.0
         xyz = tuple(np.dot(mat44, np.array([v3s.vector.x, v3s.vector.y, v3s.vector.z, 1.0])))[:3]
         r = Vector3Stamped()
         r.header.stamp = v3s.header.stamp
@@ -94,32 +99,32 @@ class cmdVelCtrl:
         #self.controller[3].setpoint = self.cmd_vel_msg.angular.x
         #self.controller[4].setpoint = self.cmd_vel_msg.angular.y
         #self.controller[5].setpoint = self.cmd_vel_msg.angular.z
-        ## query current robot speed from pybullet
+        # query current robot speed from pybullet
         #linear_vel, angular_vel = self.pb.getBaseVelocity(self.robot)
-        ## compute torque value based on PID library
+        # compute torque value based on PID library
         #output = []
-        #for i in range(0, 3):
-            #output.append(self.controller[i](linear_vel[i]))
-        #for j in range(0, 3):
-            #output.append(self.controller[j](angular_vel[j]))
-        ## apply external force to robot body
+        # for i in range(0, 3):
+        # output.append(self.controller[i](linear_vel[i]))
+        # for j in range(0, 3):
+        # output.append(self.controller[j](angular_vel[j]))
+        # apply external force to robot body
         #self.z_offset = rospy.get_param('~cmd_vel_ctrl/z_offset', -0.35)
-        #self.pb.applyExternalForce(self.robot, linkIndex=-1, forceObj=[output[0], output[1], output[2]],
-                                    #posObj=[0.0, 0.0, self.z_offset], flags=self.pb.LINK_FRAME)
-        #self.pb.applyExternalTorque(self.robot, linkIndex=-1, torqueObj=[output[3], output[4], output[5]],
-                                    #flags=self.pb.LINK_FRAME)
+        # self.pb.applyExternalForce(self.robot, linkIndex=-1, forceObj=[output[0], output[1], output[2]],
+        # posObj=[0.0, 0.0, self.z_offset], flags=self.pb.LINK_FRAME)
+        # self.pb.applyExternalTorque(self.robot, linkIndex=-1, torqueObj=[output[3], output[4], output[5]],
+        # flags=self.pb.LINK_FRAME)
 
     def cmdVelCB(self, msg):
         """callback to receive vel commands from user"""
         self.cmd_vel_msg = msg
-        self.received_cmd_vel_time = rospy.Time.now()
+        self.received_cmd_vel_time = self.node.get_clock().now()
 
     def execute(self):
         """this function gets called from pybullet ros main update loop"""
         if not self.cmd_vel_msg:
             return
         # check if timestamp is recent
-        if (rospy.Time.now() - rospy.Duration(0.5)) > self.received_cmd_vel_time:
+        if (self.node.get_clock().now() - rclpy.Duration(0.5)) > self.received_cmd_vel_time:
             return
         # transform Twist from base_link to odom (pybullet allows to set vel only on world ref frame)
         # NOTE: we would normally use tf for this, but there are issues currently between python 2 and 3 in ROS 1

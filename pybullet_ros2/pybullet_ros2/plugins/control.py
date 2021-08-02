@@ -4,14 +4,16 @@
 position, velocity and effort control for all revolute joints on the robot
 """
 
-import rospy
+import rclpy
 from std_msgs.msg import Float64
 
 # NOTE: 2 classes are implemented here, scroll down to the next class (Control) to see the plugin!
 
+
 class pveControl:
     """helper class to receive position, velocity or effort (pve) control commands"""
-    def __init__(self, joint_index, joint_name, controller_type):
+
+    def __init__(self, node, joint_index, joint_name, controller_type):
         """constructor
         Assumes joint_name is unique, creates multiple subscribers to receive commands
         joint_index - stores an integer joint identifier
@@ -19,8 +21,12 @@ class pveControl:
         controller_type - position, velocity or effort
         """
         assert(controller_type in ['position', 'velocity', 'effort'])
-        rospy.Subscriber(joint_name + '_' + controller_type + '_controller/command',
-                         Float64, self.pve_controlCB, queue_size=1)
+        self.subscriber = node.create_subscription(
+            Float64,
+            joint_name + '_' + controller_type + '_controller/command',
+            self.pve_controlCB,
+            10)
+
         self.cmd = 0.0
         self.data_available = False
         self.joint_index = joint_index
@@ -51,23 +57,29 @@ class pveControl:
         return self.joint_index
 
 # plugin is implemented below
+
+
 class Control:
-    def __init__(self, pybullet, robot, **kargs):
+    def __init__(self, pybullet, node, robot, **kargs):
         # get "import pybullet as pb" and store in self.pb
         self.pb = pybullet
+        self.node = node
+        self.node.declare_parameter("max_effort", 100.0)
         # get robot from parent class
         self.robot = robot
         # lists to recall last received command (useful when controlling multiple joints)
         self.position_joint_commands = []
         self.velocity_joint_commands = []
         self.effort_joint_commands = []
+
         # this parameter will be set for all robot joints
-        if rospy.has_param('~max_effort_vel_mode'):
-            rospy.logwarn('max_effort_vel_mode parameter is deprecated, please use max_effort instead')
-            # kept for backwards compatibility, delete after some time
-            max_effort = rospy.get_param('~max_effort_vel_mode', 100.0)
-        else:
-            max_effort = rospy.get_param('~max_effort', 100.0)
+        # if node.has_paramater('max_effort_vel_mode'):
+        #     rospy.logwarn('max_effort_vel_mode parameter is deprecated, please use max_effort instead')
+        #     # kept for backwards compatibility, delete after some time
+        #     max_effort = rospy.get_param('~max_effort_vel_mode', 100.0)
+        # else:
+
+        max_effort = node.get_parameter('max_effort').value
         # the max force to apply to the joint, used in velocity control
         self.force_commands = []
         # get joints names and store them in dictionary, combine both revolute and prismatic dic
@@ -89,11 +101,11 @@ class Control:
             # create list of joints for later use in pve_ctrl_cmd(...)
             self.joint_indices.append(joint_index)
             # create position control object
-            self.pc_subscribers.append(pveControl(joint_index, joint_name, 'position'))
+            self.pc_subscribers.append(pveControl(self.node, joint_index, joint_name, 'position'))
             # create position control object
-            self.vc_subscribers.append(pveControl(joint_index, joint_name, 'velocity'))
+            self.vc_subscribers.append(pveControl(self.node, joint_index, joint_name, 'velocity'))
             # create position control object
-            self.ec_subscribers.append(pveControl(joint_index, joint_name, 'effort'))
+            self.ec_subscribers.append(pveControl(self.node, joint_index, joint_name, 'effort'))
 
     def execute(self):
         """this function gets called from pybullet ros main update loop"""
@@ -117,11 +129,10 @@ class Control:
         # forward commands to pybullet, give priority to position control cmds, then vel, at last effort
         if position_ctrl_task:
             self.pb.setJointMotorControlArray(bodyUniqueId=self.robot, jointIndices=self.joint_indices,
-                                     controlMode=self.pb.POSITION_CONTROL, targetPositions=self.position_joint_commands, forces=self.force_commands)
+                                              controlMode=self.pb.POSITION_CONTROL, targetPositions=self.position_joint_commands, forces=self.force_commands)
         elif velocity_ctrl_task:
             self.pb.setJointMotorControlArray(bodyUniqueId=self.robot, jointIndices=self.joint_indices,
-                                     controlMode=self.pb.VELOCITY_CONTROL, targetVelocities=self.velocity_joint_commands, forces=self.force_commands)
+                                              controlMode=self.pb.VELOCITY_CONTROL, targetVelocities=self.velocity_joint_commands, forces=self.force_commands)
         elif effort_ctrl_task:
             self.pb.setJointMotorControlArray(bodyUniqueId=self.robot, jointIndices=self.joint_indices,
-                                     controlMode=self.pb.TORQUE_CONTROL, forces=self.effort_joint_commands)
-        
+                                              controlMode=self.pb.TORQUE_CONTROL, forces=self.effort_joint_commands)
