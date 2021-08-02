@@ -4,3 +4,7 @@
 # automatically generated robot urdf from xacro
 acrobat_robot.urdf
 r2d2.urdf
+
+build/
+install/
+log/
