@@ -1,10 +1,13 @@
 # [WIP] Port of pybullet_ros from ROS to ROS2
 
 Following packages are required for succesfull compilation:
+Make sure to use the ros2 branch!!
  
 +  [xacro](https://github.com/ros/xacro)
 +  [vision_opencv](https://github.com/ros2/vision_opencv)
 +  [tf_transformations](https://github.com/DLu/tf_transformations/)
+
+Source the ros installation: `source /ros2_foxy/install/local_setup.bash`
 
 Currently only one launch is configured, which can be run with:
 
