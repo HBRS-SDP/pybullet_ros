@@ -36,4 +36,5 @@ class joinStatePub:
         # update msg time using ROS time api
         joint_msg.header.stamp = self.node.get_clock().now().to_msg()
         # publish joint states to ROS
+    
         self.pub_joint_states.publish(joint_msg)

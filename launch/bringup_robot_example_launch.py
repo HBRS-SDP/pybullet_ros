@@ -23,7 +23,7 @@ def generate_launch_description():
                     {"pybullet_gui": True},
                     {"robot_urdf_path": path_to_urdf},
                     {"pause_simulation": False},
-                    {"parallel_plugin_execution": False},
+                    {"parallel_plugin_execution": True},
                     {"robot_pose_x": 0.0},
                     {"robot_pose_y": 0.0},
                     {"robot_pose_z": 0.7},

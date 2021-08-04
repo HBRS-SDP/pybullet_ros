@@ -47,12 +47,16 @@ class simpleOdometry:
          self.odom_msg.pose.pose.orientation.z,
          self.odom_msg.pose.pose.orientation.w] = orientation
         # query base velocity from pybullet and store it in msg
-        [self.odom_msg.twist.twist.linear.x,
-         self.odom_msg.twist.twist.linear.y,
-         self.odom_msg.twist.twist.linear.z],
-        [self.odom_msg.twist.twist.angular.x,
-         self.odom_msg.twist.twist.angular.y,
-         self.odom_msg.twist.twist.angular.z] = self.pb.getBaseVelocity(self.robot)
+        linear, angular = self.pb.getBaseVelocity(self.robot)
+ 
+        self.odom_msg.twist.twist.linear.x = linear[0]
+        self.odom_msg.twist.twist.linear.y = linear[1]
+        self.odom_msg.twist.twist.linear.z = linear[2]
+       
+        self.odom_msg.twist.twist.angular.x = angular[0]
+        self.odom_msg.twist.twist.angular.y = angular[1]
+        self.odom_msg.twist.twist.angular.z = angular[2]
+        
         self.pub_odometry.publish(self.odom_msg)
         # tf broadcast (odom to base_link)
         self.br.sendTransform(position, orientation, self.node.get_clock().now(),
