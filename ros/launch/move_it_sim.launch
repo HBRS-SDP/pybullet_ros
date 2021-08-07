@@ -10,7 +10,11 @@
     <!-- This file is in /home/ros_user/catkin_ws/src/pybullet_ros/ros/src/pybullet_ros/plugins/ -->
     <arg name="environment" default="environment" /> <!-- name of python file without the .py inside plugins folder -->
     <arg name="pybullet_gui" default="True" />
-    <arg name="robot_urdf_path" default="$(find pybullet_ros)/common/test/urdf/kuka_experimental/kuka_lbr_iiwa_support/urdf/lbr_iiwa_14_r820.urdf" />
+    <arg name="robot_urdf_path" default="$(find pybullet_ros)/common/test/urdf/kuka_experimental/kuka_lbr_iiwa_support/urdf/lbr_iiwa_14_r820.xacro" />
+    <!-- <arg name="robot_urdf_path" default="$(find kuka_experimental)/kuka_lbr_iiwa_support/urdf/lbr_iiwa_14_r820.urdf" /> -->
+
+    <!-- <arg name="robot_urdf_path" default="$(find universal_robot)/ur_description/urdf/ur5_robot.urdf.xacro" /> -->
+
     <arg name="pause_simulation" default="False" />
     <arg name="parallel_plugin_execution" default="True" />
     <arg name="robot_pose_x" default="0.0" />
