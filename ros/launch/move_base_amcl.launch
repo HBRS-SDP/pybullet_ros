@@ -3,7 +3,7 @@
   <!-- <master auto="start"/> -->
 
   <!-- Map server -->
-  <arg name="map_file" default="$(find pybullet_ros)/common/maps/CO25_LAB.yaml"/>
+  <arg name="map_file" default="$(find pybullet_ros)/common/maps/test_world_v6_map_1yaml"/>
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
 
   <!-- Place map frame at odometry frame -->
