@@ -22,6 +22,8 @@ class RGBDCamera:
         self.robot = robot
         # create image msg placeholder for publication
         self.image_msg = Image()
+        self.depth_image_msg = Image()
+
         # get RGBD camera parameters from ROS param server
         self.image_msg.width = rospy.get_param('~rgbd_camera/resolution/width', 640)
         self.image_msg.height = rospy.get_param('~rgbd_camera/resolution/height', 480)
@@ -59,6 +61,7 @@ class RGBDCamera:
 
         # publisher for depth image
         self.pub_depth_image = rospy.Publisher('depth_image', Image, queue_size=1)
+        
 
     def compute_projection_matrix(self):
         return self.pb.computeProjectionMatrix(
@@ -103,6 +106,17 @@ class RGBDCamera:
 
     def execute(self):
         """this function gets called from pybullet ros main update loop"""
+
+        width, height, viewMat, projMat, cameraUp, camForward, horizon, vertical, _, _, dist, camTarget = self.pb.getDebugVisualizerCamera()
+        imgW = int(width / 10)
+        imgH = int(height / 10)
+        img = self.pb.getCameraImage(imgW, imgH, renderer=self.pb.ER_BULLET_HARDWARE_OPENGL)
+        rgbBuffer = img[2]
+        depthBuffer = img[3]
+        depth_buffer = np.reshape(depthBuffer, [imgW, imgH])
+        # publish camera image to ROS network
+        self.pub_depth_image.publish(depth_buffer)
+
         # run at lower frequency, camera computations are expensive
         self.count += 1
         if self.count < 100:
@@ -129,50 +143,9 @@ class RGBDCamera:
         # publish camera image to ROS network
         self.pub_image.publish(self.image_msg)
 
-    def point_cloud_from_cam(self):
-        # self.pb.connect(self.pb.GUI)
-        # self.pb.setAdditionalSearchPath(pybullet_data.getDataPath())
-        # plane = self.pb.loadURDF("plane100.urdf")
-        # cube = self.pb.loadURDF("cube.urdf", [0, 0, 1])
-
         
 
-        def getRayFromTo(mouseX, mouseY):
-            width, height, viewMat, projMat, cameraUp, camForward, horizon, vertical, _, _, dist, camTarget = self.pb.getDebugVisualizerCamera(
-            )
-            camPos = [
-                camTarget[0] - dist * camForward[0], camTarget[1] - dist * camForward[1],
-                camTarget[2] - dist * camForward[2]
-            ]
-            farPlane = 10000
-            rayForward = [(camTarget[0] - camPos[0]), (camTarget[1] - camPos[1]), (camTarget[2] - camPos[2])]
-            lenFwd = math.sqrt(rayForward[0] * rayForward[0] + rayForward[1] * rayForward[1] +
-                                rayForward[2] * rayForward[2])
-            invLen = farPlane * 1. / lenFwd
-            rayForward = [invLen * rayForward[0], invLen * rayForward[1], invLen * rayForward[2]]
-            rayFrom = camPos
-            oneOverWidth = float(1) / float(width)
-            oneOverHeight = float(1) / float(height)
-
-            dHor = [horizon[0] * oneOverWidth, horizon[1] * oneOverWidth, horizon[2] * oneOverWidth]
-            dVer = [vertical[0] * oneOverHeight, vertical[1] * oneOverHeight, vertical[2] * oneOverHeight]
-            rayToCenter = [
-                rayFrom[0] + rayForward[0], rayFrom[1] + rayForward[1], rayFrom[2] + rayForward[2]
-            ]
-            ortho = [
-                -0.5 * horizon[0] + 0.5 * vertical[0] + float(mouseX) * dHor[0] - float(mouseY) * dVer[0],
-                -0.5 * horizon[1] + 0.5 * vertical[1] + float(mouseX) * dHor[1] - float(mouseY) * dVer[1],
-                -0.5 * horizon[2] + 0.5 * vertical[2] + float(mouseX) * dHor[2] - float(mouseY) * dVer[2]
-            ]
-
-            rayTo = [
-                rayFrom[0] + rayForward[0] + ortho[0], rayFrom[1] + rayForward[1] + ortho[1],
-                rayFrom[2] + rayForward[2] + ortho[2]
-            ]
-            lenOrtho = math.sqrt(ortho[0] * ortho[0] + ortho[1] * ortho[1] + ortho[2] * ortho[2])
-            alpha = math.atan(lenOrtho / farPlane)
-            return rayFrom, rayTo, alpha
-
+    def point_cloud_from_cam(self):
 
         width, height, viewMat, projMat, cameraUp, camForward, horizon, vertical, _, _, dist, camTarget = self.pb.getDebugVisualizerCamera(
         )
@@ -200,69 +173,12 @@ class RGBDCamera:
         imgH = int(height / 10)
 
         img = self.pb.getCameraImage(imgW, imgH, renderer=self.pb.ER_BULLET_HARDWARE_OPENGL)
+        
+        
         rgbBuffer = img[2]
         depthBuffer = img[3]
-        print("rgbBuffer.shape=", rgbBuffer.shape)
-        print("depthBuffer.shape=", depthBuffer.shape)
 
-        #disable rendering temporary makes adding objects faster
-        self.pb.configureDebugVisualizer(self.pb.COV_ENABLE_RENDERING, 0)
-        self.pb.configureDebugVisualizer(self.pb.COV_ENABLE_GUI, 0)
-        self.pb.configureDebugVisualizer(self.pb.COV_ENABLE_TINY_RENDERER, 0)
-        visualShapeId = self.pb.createVisualShape(shapeType=self.pb.GEOM_SPHERE, rgbaColor=[1, 1, 1, 1], radius=0.03)
-        collisionShapeId = -1  #self.pb.createCollisionShape(shapeType=self.pb.GEOM_MESH, fileName="duck_vhacd.obj", collisionFramePosition=shift,meshScale=meshScale)
+        depth_buffer = np.reshape(depthBuffer, [imgW, imgH])
 
-        for i in range(4):
-            w = cornersX[i]
-            h = cornersY[i]
-            rayFrom, rayTo, _ = getRayFromTo(w, h)
-            rf = np.array(rayFrom)
-            rt = np.array(rayTo)
-            vec = rt - rf
-            l = np.sqrt(np.dot(vec, vec))
-            newTo = (0.01 / l) * vec + rf
-            #print("len vec=",np.sqrt(np.dot(vec,vec)))
-
-            self.pb.addUserDebugLine(rayFrom, newTo, [1, 0, 0])
-            corners3D.append(newTo)
-        count = 0
-
-        stepX = 5
-        stepY = 5
-        for w in range(0, imgW, stepX):
-            for h in range(0, imgH, stepY):
-                count += 1
-                if ((count % 100) == 0):
-                    print(count, "out of ", imgW * imgH / (stepX * stepY))
-                rayFrom, rayTo, alpha = getRayFromTo(w * (width / imgW), h * (height / imgH))
-                rf = np.array(rayFrom)
-                rt = np.array(rayTo)
-                vec = rt - rf
-                l = np.sqrt(np.dot(vec, vec))
-                depthImg = float(depthBuffer[h, w])
-                far = 1000.
-                near = 0.01
-                depth = far * near / (far - (far - near) * depthImg)
-                depth /= math.cos(alpha)
-                newTo = (depth / l) * vec + rf
-                self.pb.addUserDebugLine(rayFrom, newTo, [1, 0, 0])
-                mb = self.pb.createMultiBody(baseMass=0,
-                                    baseCollisionShapeIndex=collisionShapeId,
-                                    baseVisualShapeIndex=visualShapeId,
-                                    basePosition=newTo,
-                                    useMaximalCoordinates=True)
-                color = rgbBuffer[h, w]
-                color = [color[0] / 255., color[1] / 255., color[2] / 255., 1]
-                self.pb.changeVisualShape(mb, -1, rgbaColor=color)
-        self.pb.addUserDebugLine(corners3D[0], corners3D[1], [1, 0, 0])
-        self.pb.addUserDebugLine(corners3D[1], corners3D[2], [1, 0, 0])
-        self.pb.addUserDebugLine(corners3D[2], corners3D[3], [1, 0, 0])
-        self.pb.addUserDebugLine(corners3D[3], corners3D[0], [1, 0, 0])
-        self.pb.configureDebugVisualizer(self.pb.COV_ENABLE_RENDERING, 1)
-        print("ready\n")
-        #self.pb.removeBody(plane)
-        #self.pb.removeBody(cube)
-        self.pub_depth_image.publish(mb)
-
-        while (1):
-            self.pb.setGravity(0, 0, -10)
+        # publish camera image to ROS network
+        self.pub_depth_image.publish(depth_buffer)
