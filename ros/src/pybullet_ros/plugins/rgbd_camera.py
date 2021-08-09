@@ -57,6 +57,9 @@ class RGBDCamera:
         # variable used to run this plugin at a lower frequency, HACK
         self.count = 0
 
+        # publisher for depth image
+        self.pub_depth_image = rospy.Publisher('depth_image', Image, queue_size=1)
+
     def compute_projection_matrix(self):
         return self.pb.computeProjectionMatrix(
                     left=-math.tan(math.pi * self.hfov / 360.0) * self.near_plane,
@@ -132,6 +135,7 @@ class RGBDCamera:
         # plane = self.pb.loadURDF("plane100.urdf")
         # cube = self.pb.loadURDF("cube.urdf", [0, 0, 1])
 
+        
 
         def getRayFromTo(mouseX, mouseY):
             width, height, viewMat, projMat, cameraUp, camForward, horizon, vertical, _, _, dist, camTarget = self.pb.getDebugVisualizerCamera(
@@ -258,6 +262,7 @@ class RGBDCamera:
         print("ready\n")
         #self.pb.removeBody(plane)
         #self.pb.removeBody(cube)
-        # TO DO: create a new topic and publish to it, refer line 45 & 126
+        self.pub_depth_image.publish(mb)
+
         while (1):
             self.pb.setGravity(0, 0, -10)
