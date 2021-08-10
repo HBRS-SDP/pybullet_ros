@@ -95,7 +95,7 @@ Done. The robot should now move in velocity or effort control mode with the desi
 
 - Next step is to create your own move_it configuration package. Either you can do it on your own or for this tutorial a configuration file is already created which can be found at
 
-        kuka_lbr_iiwa_support
+        https://github.com/malwaru/kuka_moveit_config
 
 ## Visualize tf data and robot model in rviz
 
