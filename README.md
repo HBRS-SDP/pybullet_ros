@@ -89,6 +89,14 @@ Done. The robot should now move in velocity or effort control mode with the desi
         sudo apt upgrade
         sudo apt install-noetic-moveit
 
+- For the purpose of this tutorial we will be using the kuka_lbr_iiwa robot. To obtain the necessary URDF files for this robot download the following repository and place the folder titles "kuka_lbr_iiwa_support" in the src folder of your catkin workspace. After placing it do a catkin build to build the package
+
+        https://github.com/ros-industrial/kuka_experimental
+
+- Next step is to create your own move_it configuration package. Either you can do it on your own or for this tutorial a configuration file is already created which can be found at
+
+        kuka_lbr_iiwa_support
+
 ## Visualize tf data and robot model in rviz
 
 A convenient configuration file is provided for the visualization of the example robot, run it with:
