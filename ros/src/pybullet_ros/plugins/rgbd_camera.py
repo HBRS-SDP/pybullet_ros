@@ -22,6 +22,7 @@ class RGBDCamera:
         self.robot = robot
         # create image msg placeholder for publication
         self.image_msg = Image()
+        self.depth_image_msg = Image()
 
         # get RGBD camera parameters from ROS param server
         self.image_msg.width = rospy.get_param('~rgbd_camera/resolution/width', 640)
@@ -60,6 +61,11 @@ class RGBDCamera:
 
         # publisher for depth image
         self.pub_depth_image = rospy.Publisher('depth_image', Image, queue_size=1)
+        self.depth_image_msg.encoding = rospy.get_param('~rgbd_camera/resolution/encoding', '32FC1')
+        self.depth_image_msg.width = rospy.get_param('~rgbd_camera/resolution/width', 640)
+        self.depth_image_msg.height = rospy.get_param('~rgbd_camera/resolution/height', 480)
+        self.depth_image_msg.is_bigendian = rospy.get_param('~rgbd_camera/resolution/encoding', 0)
+        self.depth_image_msg.step = rospy.get_param('~rgbd_camera/resolution/encoding', 2560)
         
         
 
@@ -93,24 +99,12 @@ class RGBDCamera:
         return bgr_image.astype(np.uint8)
 
     def extract_frame_cannonical(self, camera_image):
-        bgr_image = np.zeros((self.image_msg.height, self.image_msg.width, 3))
 
-        camera_image = np.reshape(camera_image[3], (camera_image[1], camera_image[0], 4))
-
-        bgr_image[:, :, 2] =\
-            (1 - camera_image[:, :, 3]) * camera_image[:, :, 2] +\
-            camera_image[:, :, 3] * camera_image[:, :, 2]
-
-        bgr_image[:, :, 1] =\
-            (1 - camera_image[:, :, 3]) * camera_image[:, :, 1] +\
-            camera_image[:, :, 3] * camera_image[:, :, 1]
-
-        bgr_image[:, :, 0] =\
-            (1 - camera_image[:, :, 3]) * camera_image[:, :, 0] +\
-            camera_image[:, :, 3] * camera_image[:, :, 0]
-
+        # camera_image = np.reshape(camera_image[3], (camera_image[1], camera_image[0], 1))
+        # Depth - not in meters - check: https://raw.githubusercontent.com/bulletphysics/bullet3/master/docs/pybullet_quickstartguide.pdf
+        camera_image = camera_image[3]
         # return frame
-        return bgr_image.astype(np.float32)
+        return camera_image.astype(np.float32)
 
     def image_to_pointcloud(self, camera_image):
         pass
@@ -156,12 +150,11 @@ class RGBDCamera:
         # publish camera image to ROS network
         self.pub_image.publish(self.image_msg)
 
-        # Extract canonical
+        # Extract canonical frame
         frame_depth = self.extract_frame_cannonical(pybullet_cam_resp)
         # fill pixel data array
-        self.image_msg.data = self.image_bridge.cv2_to_imgmsg(frame, encoding="32FC1").data
+        self.depth_image_msg.data = self.image_bridge.cv2_to_imgmsg(frame_depth, encoding="32FC1").data
         # update msg time stamp
-        self.image_msg.header.stamp = rospy.Time.now()
+        self.depth_image_msg.header.stamp = rospy.Time.now()
         # publish camera image to ROS network
-        self.pub_image.publish(self.image_msg)
-        self.pub_depth_image.publish(self.image_msg)
+        self.pub_depth_image.publish(self.depth_image_msg)
