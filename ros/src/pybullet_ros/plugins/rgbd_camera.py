@@ -150,14 +150,14 @@ class RGBDCamera:
         # frame extraction function from qibullet
         frame = self.extract_frame(pybullet_cam_resp)
         # fill pixel data array
-        self.image_msg.data = self.image_bridge.cv2_to_imgmsg(pybullet_cam_resp).data
+        self.image_msg.data = self.image_bridge.cv2_to_imgmsg(frame).data
         # update msg time stamp
         self.image_msg.header.stamp = rospy.Time.now()
         # publish camera image to ROS network
         self.pub_image.publish(self.image_msg)
 
         # Extract canonical
-        frame_depth = self.extract_frame_cannonical(depth)
+        frame_depth = self.extract_frame_cannonical(pybullet_cam_resp)
         # fill pixel data array
         self.image_msg.data = self.image_bridge.cv2_to_imgmsg(frame, encoding="32FC1").data
         # update msg time stamp
