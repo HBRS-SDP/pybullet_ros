@@ -10,8 +10,7 @@
     <!-- This file is in /home/ros_user/catkin_ws/src/pybullet_ros/ros/src/pybullet_ros/plugins/ -->
     <arg name="environment" default="environment" /> <!-- name of python file without the .py inside plugins folder -->
     <arg name="pybullet_gui" default="True" />
-    <!-- <arg name="robot_urdf_path" default="$(find pybullet_ros)/common/test/urdf/kuka_experimental/kuka_lbr_iiwa_support/urdf/lbr_iiwa_14_r820.urdf" /> -->
-    <arg name="robot_urdf_path" default="$(find kuka_lbr_iiwa_support)/urdf/lbr_iiwa_14_r820.xacro" />
+    <arg name="robot_urdf_path" default="$(find kuka_lbr_iiwa_support)/urdf/lbr_iiwa_14_r820.urdf" />
 
     <!-- <arg name="robot_urdf_path" default="$(find universal_robot)/ur_description/urdf/ur5_robot.urdf.xacro" /> -->
 
@@ -32,8 +31,18 @@
 
     <!-- robot_state_publisher, publish tf based on /joint_states topic and robot_description param -->
     <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen" />
+    
+    <!-- Load kuka_joint_state_controller.yaml -->
+    <!-- <rosparam file="$(find pybullet_ros)/ros/config/kuka_joint_state_controller.yaml" command="load"/> -->
+   
     <!-- Load the kuka_robot trajectory controller -->
-    <rosparam file="$(find pybullet_ros)/ros/config/kuka_arm_trajectory_controller.yaml" command="load"/>
+    <rosparam file="$(find pybullet_ros)/ros/config/kuka_1_controller.yaml" command="load"/>
+
+    <!-- <node name="arm_controller_spawner" pkg="controller_manager" type="controller_manager" args="spawn arm_controller" respawn="false" output="screen"/> -->
+
+    <!-- load other controllers -->
+    <!-- <node name="ros_control_controller_manager" pkg="controller_manager" type="controller_manager" respawn="false" output="screen" args="load joint_group_position_controller" /> -->
+
 
     <!-- pybullet ros wrapper -->
     <include file="$(find pybullet_ros)/ros/launch/pybullet_ros_example.launch" >

@@ -93,9 +93,9 @@ Done. The robot should now move in velocity or effort control mode with the desi
 
         https://github.com/ros-industrial/kuka_experimental
 
-- Next step is to create your own move_it configuration package. Either you can do it on your own or for this tutorial a configuration file is already created which can be found at
+- Next step is to create your own move_it configuration package.  Either create your own move_it configuration or tutorial use the following repository that has both the move_it configuartion and an updated kuka robot description package. Download them and add them to the src folder of your catkin workspace and build the packages
 
-        https://github.com/malwaru/kuka_moveit_config
+        https://github.com/malwaru/kuka_manipulation
 
 ## Visualize tf data and robot model in rviz
 

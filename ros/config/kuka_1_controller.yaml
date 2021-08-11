@@ -1,4 +1,4 @@
-kuka_arm_trajectory_controller:
+kuka_1_controller:
   type: position_controllers/JointTrajectoryController
   joints:      
       - joint_a1
@@ -22,3 +22,18 @@ kuka_arm_trajectory_controller:
   stop_trajectory_duration: 0.5
   state_publish_rate:  50
   action_monitor_rate: 10
+  
+#   joint_group_position_controller:
+#     type: position_controllers/JointGroupPositionController
+#     joints:
+#         - joint_a1
+#         - joint_a2
+#         - joint_a3
+#         - joint_a4
+#         - joint_a5
+#         - joint_a6
+#         - joint_a7
+
+
+
+
