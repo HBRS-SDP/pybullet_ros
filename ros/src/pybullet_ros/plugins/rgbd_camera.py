@@ -107,15 +107,15 @@ class RGBDCamera:
     def execute(self):
         """this function gets called from pybullet ros main update loop"""
 
-        width, height, viewMat, projMat, cameraUp, camForward, horizon, vertical, _, _, dist, camTarget = self.pb.getDebugVisualizerCamera()
-        imgW = int(width / 10)
-        imgH = int(height / 10)
-        img = self.pb.getCameraImage(imgW, imgH, renderer=self.pb.ER_BULLET_HARDWARE_OPENGL)
-        rgbBuffer = img[2]
-        depthBuffer = img[3]
-        depth_buffer = np.reshape(depthBuffer, [imgW, imgH])
-        # publish camera image to ROS network
-        self.pub_depth_image.publish(depth_buffer)
+        # width, height, viewMat, projMat, cameraUp, camForward, horizon, vertical, _, _, dist, camTarget = self.pb.getDebugVisualizerCamera()
+        # imgW = int(width / 10)
+        # imgH = int(height / 10)
+        # img = self.pb.getCameraImage(imgW, imgH, renderer=self.pb.ER_BULLET_HARDWARE_OPENGL)
+        # rgbBuffer = img[2]
+        # depthBuffer = img[3]
+        # depth_buffer = np.reshape(depthBuffer, [imgW, imgH])
+        # # publish camera image to ROS network
+        # 
 
         # run at lower frequency, camera computations are expensive
         self.count += 1
@@ -142,43 +142,4 @@ class RGBDCamera:
         self.image_msg.header.stamp = rospy.Time.now()
         # publish camera image to ROS network
         self.pub_image.publish(self.image_msg)
-
-        
-
-    def point_cloud_from_cam(self):
-
-        width, height, viewMat, projMat, cameraUp, camForward, horizon, vertical, _, _, dist, camTarget = self.pb.getDebugVisualizerCamera(
-        )
-        camPos = [
-            camTarget[0] - dist * camForward[0], camTarget[1] - dist * camForward[1],
-            camTarget[2] - dist * camForward[2]
-        ]
-        farPlane = 10000
-        rayForward = [(camTarget[0] - camPos[0]), (camTarget[1] - camPos[1]), (camTarget[2] - camPos[2])]
-        lenFwd = math.sqrt(rayForward[0] * rayForward[0] + rayForward[1] * rayForward[1] +
-                        rayForward[2] * rayForward[2])
-        oneOverWidth = float(1) / float(width)
-        oneOverHeight = float(1) / float(height)
-        dHor = [horizon[0] * oneOverWidth, horizon[1] * oneOverWidth, horizon[2] * oneOverWidth]
-        dVer = [vertical[0] * oneOverHeight, vertical[1] * oneOverHeight, vertical[2] * oneOverHeight]
-
-        lendHor = math.sqrt(dHor[0] * dHor[0] + dHor[1] * dHor[1] + dHor[2] * dHor[2])
-        lendVer = math.sqrt(dVer[0] * dVer[0] + dVer[1] * dVer[1] + dVer[2] * dVer[2])
-
-        cornersX = [0, width, width, 0]
-        cornersY = [0, 0, height, height]
-        corners3D = []
-
-        imgW = int(width / 10)
-        imgH = int(height / 10)
-
-        img = self.pb.getCameraImage(imgW, imgH, renderer=self.pb.ER_BULLET_HARDWARE_OPENGL)
-        
-        
-        rgbBuffer = img[2]
-        depthBuffer = img[3]
-
-        depth_buffer = np.reshape(depthBuffer, [imgW, imgH])
-
-        # publish camera image to ROS network
-        self.pub_depth_image.publish(depth_buffer)
+        self.pub_depth_image.publish(self.image_msg)
