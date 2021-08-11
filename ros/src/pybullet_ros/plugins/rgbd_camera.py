@@ -61,6 +61,7 @@ class RGBDCamera:
         # publisher for depth image
         self.pub_depth_image = rospy.Publisher('depth_image', Image, queue_size=1)
         
+        
 
     def compute_projection_matrix(self):
         return self.pb.computeProjectionMatrix(
@@ -94,7 +95,7 @@ class RGBDCamera:
     def extract_frame_cannonical(self, camera_image):
         bgr_image = np.zeros((self.image_msg.height, self.image_msg.width, 3))
 
-        camera_image = np.reshape(camera_image[2], (camera_image[1], camera_image[0], 4))
+        camera_image = np.reshape(camera_image[3], (camera_image[1], camera_image[0], 4))
 
         bgr_image[:, :, 2] =\
             (1 - camera_image[:, :, 3]) * camera_image[:, :, 2] +\
@@ -109,11 +110,11 @@ class RGBDCamera:
             camera_image[:, :, 3] * camera_image[:, :, 0]
 
         # return frame
-        return bgr_image.astype(np.uint32)
+        return bgr_image.astype(np.float32)
 
     def image_to_pointcloud(self, camera_image):
         pass
-    
+
     def compute_camera_target(self, camera_position, camera_orientation):
         """
         camera target is a point 5m in front of the robot camera
@@ -149,16 +150,16 @@ class RGBDCamera:
         # frame extraction function from qibullet
         frame = self.extract_frame(pybullet_cam_resp)
         # fill pixel data array
-        self.image_msg.data = self.image_bridge.cv2_to_imgmsg(frame).data
+        self.image_msg.data = self.image_bridge.cv2_to_imgmsg(pybullet_cam_resp).data
         # update msg time stamp
         self.image_msg.header.stamp = rospy.Time.now()
         # publish camera image to ROS network
         self.pub_image.publish(self.image_msg)
 
         # Extract canonical
-        frame_depth = self.extract_frame_cannonical(pybullet_cam_resp[3])
+        frame_depth = self.extract_frame_cannonical(depth)
         # fill pixel data array
-        self.image_msg.data = self.image_bridge.cv2_to_imgmsg(frame).data
+        self.image_msg.data = self.image_bridge.cv2_to_imgmsg(frame, encoding="32FC1").data
         # update msg time stamp
         self.image_msg.header.stamp = rospy.Time.now()
         # publish camera image to ROS network
