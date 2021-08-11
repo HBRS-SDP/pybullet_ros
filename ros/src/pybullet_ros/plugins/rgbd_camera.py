@@ -98,13 +98,24 @@ class RGBDCamera:
         # return frame
         return bgr_image.astype(np.uint8)
 
-    def extract_frame_cannonical(self, camera_image):
+    def extract_depth_frame(self, camera_image):
+        '''
+        Inputs:
+        -------
+        camera_image: Obtained from getCameraImage()
 
-        # camera_image = np.reshape(camera_image[3], (camera_image[1], camera_image[0], 1))
-        # Depth - not in meters - check: https://raw.githubusercontent.com/bulletphysics/bullet3/master/docs/pybullet_quickstartguide.pdf
-        camera_image = camera_image[3]
-        # return frame
-        return camera_image.astype(np.float32)
+        Returns:
+        --------
+        depth_image: Depth Image in cannonical form
+        '''
+        
+        depth_image = camera_image[3]
+        
+        # Get true depth value (https://stackoverflow.com/questions/6652253/getting-the-true-z-value-from-the-depth-buffer)
+        depth_image = self.far_plane * self.near_plane / ( self.far_plane - (self.far_plane - self.near_plane) * depth_image)
+
+        # return depth_image 
+        return depth_image.astype(np.float32)
 
     def image_to_pointcloud(self, camera_image):
         pass
@@ -150,8 +161,8 @@ class RGBDCamera:
         # publish camera image to ROS network
         self.pub_image.publish(self.image_msg)
 
-        # Extract canonical frame
-        frame_depth = self.extract_frame_cannonical(pybullet_cam_resp)
+        # Extract depth image/frame
+        frame_depth = self.extract_depth_frame(pybullet_cam_resp)
         # fill pixel data array
         self.depth_image_msg.data = self.image_bridge.cv2_to_imgmsg(frame_depth, encoding="32FC1").data
         # update msg time stamp
