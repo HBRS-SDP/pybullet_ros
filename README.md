@@ -97,6 +97,16 @@ Done. The robot should now move in velocity or effort control mode with the desi
 
         https://github.com/malwaru/kuka_manipulation
 
+- After completion of the setup build all packages then open three terminals in each terminal run one of the following launch files
+
+        roslaunch pybullet_ros move_it_sim.launch
+        roslaunch kuka_moveit_config move_group.launch
+        roslaunch kuka_moveit_config moveit_rviz.launch  
+
+- After running these three are running use Rviz to plan and execute trajectory by adding a MoveIt planner
+
+
+
 ## Visualize tf data and robot model in rviz
 
 A convenient configuration file is provided for the visualization of the example robot, run it with:
