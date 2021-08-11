@@ -22,7 +22,6 @@ class RGBDCamera:
         self.robot = robot
         # create image msg placeholder for publication
         self.image_msg = Image()
-        self.depth_image_msg = Image()
 
         # get RGBD camera parameters from ROS param server
         self.image_msg.width = rospy.get_param('~rgbd_camera/resolution/width', 640)
@@ -92,6 +91,29 @@ class RGBDCamera:
         # return frame
         return bgr_image.astype(np.uint8)
 
+    def extract_frame_cannonical(self, camera_image):
+        bgr_image = np.zeros((self.image_msg.height, self.image_msg.width, 3))
+
+        camera_image = np.reshape(camera_image[2], (camera_image[1], camera_image[0], 4))
+
+        bgr_image[:, :, 2] =\
+            (1 - camera_image[:, :, 3]) * camera_image[:, :, 2] +\
+            camera_image[:, :, 3] * camera_image[:, :, 2]
+
+        bgr_image[:, :, 1] =\
+            (1 - camera_image[:, :, 3]) * camera_image[:, :, 1] +\
+            camera_image[:, :, 3] * camera_image[:, :, 1]
+
+        bgr_image[:, :, 0] =\
+            (1 - camera_image[:, :, 3]) * camera_image[:, :, 0] +\
+            camera_image[:, :, 3] * camera_image[:, :, 0]
+
+        # return frame
+        return bgr_image.astype(np.uint32)
+
+    def image_to_pointcloud(self, camera_image):
+        pass
+    
     def compute_camera_target(self, camera_position, camera_orientation):
         """
         camera target is a point 5m in front of the robot camera
@@ -106,16 +128,6 @@ class RGBDCamera:
 
     def execute(self):
         """this function gets called from pybullet ros main update loop"""
-
-        # width, height, viewMat, projMat, cameraUp, camForward, horizon, vertical, _, _, dist, camTarget = self.pb.getDebugVisualizerCamera()
-        # imgW = int(width / 10)
-        # imgH = int(height / 10)
-        # img = self.pb.getCameraImage(imgW, imgH, renderer=self.pb.ER_BULLET_HARDWARE_OPENGL)
-        # rgbBuffer = img[2]
-        # depthBuffer = img[3]
-        # depth_buffer = np.reshape(depthBuffer, [imgW, imgH])
-        # # publish camera image to ROS network
-        # 
 
         # run at lower frequency, camera computations are expensive
         self.count += 1
@@ -136,6 +148,15 @@ class RGBDCamera:
                                                    flags=self.pb.ER_NO_SEGMENTATION_MASK)
         # frame extraction function from qibullet
         frame = self.extract_frame(pybullet_cam_resp)
+        # fill pixel data array
+        self.image_msg.data = self.image_bridge.cv2_to_imgmsg(frame).data
+        # update msg time stamp
+        self.image_msg.header.stamp = rospy.Time.now()
+        # publish camera image to ROS network
+        self.pub_image.publish(self.image_msg)
+
+        # Extract canonical
+        frame_depth = self.extract_frame_cannonical(pybullet_cam_resp[3])
         # fill pixel data array
         self.image_msg.data = self.image_bridge.cv2_to_imgmsg(frame).data
         # update msg time stamp
