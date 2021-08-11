@@ -143,7 +143,7 @@ class RGBDCamera:
         '''
         
         # calculate the focal length
-        fov = 60 # unit - degree ?? (https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/examples/getCameraImageTest.py)
+        fov = 60 # how to get this? unit - degree ?? (https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/examples/getCameraImageTest.py)
         y1_x = self.depth_image_msg.width / 2
         y1_y = self.depth_image_msg.height / 2
         focalLength_x = y1_x / np.tan(fov/2)
@@ -153,7 +153,7 @@ class RGBDCamera:
         for v in range(depth_image.shape[1]):
                 for u in range(depth_image.shape[0]):
                     z = depth_image[u,v]
-                    x = (u - self.depth_image_msg.width / 2) * z / focalLength_x    # u and v are needed, no clue how to do this
+                    x = (u - self.depth_image_msg.width / 2) * z / focalLength_x    
                     y = (v - self.depth_image_msg.height / 2) * z / focalLength_y
 
                     point_cloud.append([x, y, z]) 
