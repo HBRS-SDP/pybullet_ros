@@ -74,12 +74,13 @@ class RGBDCamera:
         self.pub_point_cloud = rospy.Publisher('point_cloud', PointCloud2, queue_size=1)
         # point cloud msg 
         self.point_cloud_msg = PointCloud2()
-        self.point_cloud_msg.width = rospy.get_param('~rgbd_camera/resolution/width', (640 * 440) / 32)
-        self.point_cloud_msg.height = rospy.get_param('~rgbd_camera/resolution/height', 1)
+        self.point_cloud_msg.width = rospy.get_param('~rgbd_camera/resolution/width',  640)
+        self.point_cloud_msg.height = rospy.get_param('~rgbd_camera/resolution/height', 480)
         self.point_cloud_msg.is_bigendian = rospy.get_param('~rgbd_camera/resolution/encoding', 0)
-        self.point_cloud_msg.point_step = rospy.get_param('~rgbd_camera/resolution/encoding', 32) # what is the point step ?
-        self.point_cloud_msg.row_step = rospy.get_param('~rgbd_camera/resolution/encoding', (640 * 440) / 32)
-        # self.point_clould_msg.fields = ?
+        self.point_cloud_msg.point_step = rospy.get_param('~rgbd_camera/resolution/encoding', 32) # what is the point step and row step?
+        self.point_cloud_msg.row_step = rospy.get_param('~rgbd_camera/resolution/encoding', 640 * 32)
+        self.point_cloud_msg.is_dense  = False # oganised point cloud. check https://answers.ros.org/question/234455/pointcloud2-and-pointfield/
+        # self.point_clould_msg.fields = ? http://docs.ros.org/en/melodic/api/sensor_msgs/html/msg/PointField.html
         
 
     def compute_projection_matrix(self):
@@ -143,11 +144,10 @@ class RGBDCamera:
         '''
         
         # calculate the focal length
-        fov = 60 # how to get this? unit - degree ?? (https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/examples/getCameraImageTest.py)
         y1_x = self.depth_image_msg.width / 2
         y1_y = self.depth_image_msg.height / 2
-        focalLength_x = y1_x / np.tan(fov/2)
-        focalLength_y = y1_y / np.tan(fov/2)
+        focalLength_x = y1_x / np.tan(self.hfov/2)
+        focalLength_y = y1_y / np.tan(self.vfov/2)
 
         point_cloud = []
         for v in range(depth_image.shape[1]):
@@ -159,7 +159,6 @@ class RGBDCamera:
                     point_cloud.append([x, y, z]) 
                     
         point_cloud = np.array(point_cloud)# how to set uint8? 
-    
         return point_cloud.astype(np.uint8)
 
     def compute_camera_target(self, camera_position, camera_orientation):
