@@ -11,7 +11,7 @@ import numpy as np
 import rospy
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
-from sensor_msgs.msg import PointCloud2
+from sensor_msgs.msg import PointCloud2,PointField
 
 import pybullet_data
 
@@ -74,13 +74,16 @@ class RGBDCamera:
         self.pub_point_cloud = rospy.Publisher('point_cloud', PointCloud2, queue_size=1)
         # point cloud msg 
         self.point_cloud_msg = PointCloud2()
+        self.point_cloud_msg.header.frame_id = cam_frame_id
         self.point_cloud_msg.width = rospy.get_param('~rgbd_camera/resolution/width',  640)
         self.point_cloud_msg.height = rospy.get_param('~rgbd_camera/resolution/height', 480)
+        self.point_cloud_msg.fields = [PointField('x', 0, PointField.FLOAT32, 1),
+                                       PointField('y', 4, PointField.FLOAT32, 1),
+                                       PointField('z', 8, PointField.FLOAT32, 1)]
         self.point_cloud_msg.is_bigendian = rospy.get_param('~rgbd_camera/resolution/encoding', 0)
-        self.point_cloud_msg.point_step = rospy.get_param('~rgbd_camera/resolution/encoding', 32) # what is the point step and row step?
-        self.point_cloud_msg.row_step = rospy.get_param('~rgbd_camera/resolution/encoding', 640 * 32)
-        self.point_cloud_msg.is_dense  = False # oganised point cloud. check https://answers.ros.org/question/234455/pointcloud2-and-pointfield/
-        # self.point_clould_msg.fields = ? http://docs.ros.org/en/melodic/api/sensor_msgs/html/msg/PointField.html
+        self.point_cloud_msg.point_step = 12 
+        self.point_cloud_msg.row_step = self.point_cloud_msg.width * self.point_cloud_msg.point_step
+        self.point_cloud_msg.is_dense = True # organised point cloud
         
 
     def compute_projection_matrix(self):
@@ -146,20 +149,24 @@ class RGBDCamera:
         # calculate the focal length
         y1_x = self.depth_image_msg.width / 2
         y1_y = self.depth_image_msg.height / 2
-        focalLength_x = y1_x / np.tan(self.hfov/2)
-        focalLength_y = y1_y / np.tan(self.vfov/2)
+        focalLength_x = y1_x / np.tan(np.deg2rad(self.hfov)/2)
+        focalLength_y = y1_y / np.tan(np.deg2rad(self.vfov)/2)
 
-        point_cloud = []
-        for v in range(depth_image.shape[1]):
-                for u in range(depth_image.shape[0]):
-                    z = depth_image[u,v]
-                    x = (u - self.depth_image_msg.width / 2) * z / focalLength_x    
-                    y = (v - self.depth_image_msg.height / 2) * z / focalLength_y
+        # get the point cloud
+        point_cloud_1 = []
+        for v in range(depth_image.shape[0]):
+            point_cloud_2 = []
+            for u in range(depth_image.shape[1]):
+                z = depth_image[v,u]
+                x = (u - self.depth_image_msg.width / 2) * z / focalLength_x    
+                y = (v - self.depth_image_msg.height / 2) * z / focalLength_y
 
-                    point_cloud.append([x, y, z]) 
+                point_cloud_2.append([x, y, z]) 
+            point_cloud_1.append(point_cloud_2) 
                     
-        point_cloud = np.array(point_cloud)# how to set uint8? 
-        return point_cloud.astype(np.uint8)
+        point_cloud = np.array(point_cloud_1)
+        print(point_cloud.shape)
+        return point_cloud.astype(np.float32)
 
     def compute_camera_target(self, camera_position, camera_orientation):
         """
@@ -211,8 +218,10 @@ class RGBDCamera:
         # publish depth image to ROS network
         self.pub_depth_image.publish(self.depth_image_msg)
 
+        # update msg time stamp
+        self.point_cloud_msg.header.stamp = rospy.Time.now()
         # Get point cloud from depth image
-        self.point_cloud_msg.data = self.image_to_pointcloud(frame_depth)
+        self.point_cloud_msg.data = self.image_to_pointcloud(frame_depth).tostring()
         # publish point cloud to ROS n/w
         self.pub_point_cloud.publish(self.point_cloud_msg)
 
