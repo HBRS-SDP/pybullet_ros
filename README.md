@@ -97,13 +97,13 @@ Steps to run a demo gmapping
 
         roslaunch pybullet_ros move_base_sim.launch 
 
-This will launch pybullet with bottom heavy R2D2 robot and a lab enviroment
+This will launch pybullet with bottom heavy R2D2 robot and a lab environment
 
-- In a another terminal run the follwoing command to start gmapping
+- In a another terminal run the following command to start gmapping
 
         roslaunch pybullet_ros move_base_gmapping_v1.launch 
 
-- In a new termainal run
+- In a new terminal run
 
         roslaunch pybullet_ros move_base_teleop_v1.launch 
 
@@ -113,7 +113,7 @@ This will start a teleop so that you can move around the robot
 
         roslaunch pybullet_ros move_base_rviz_v1.launch 
 
-This launches Rviz with the requires setting for viuslizing. Move the robot around until you have a good map of the area
+This launches Rviz with the requires setting for visualizing. Move the robot around until you have a good map of the area
 
 After the mapping is complete there are two steps to follow
 
@@ -148,6 +148,34 @@ The setting needed for move_base is given as an example here
 - Now send 2D navigation goals to the robot. You can use this or use the python move_base client to send navigation goals using the following command
 
         rosrun pybullet_ros move_base_client_v1.py
+
+
+
+## Using MoveIt
+- First run the following to install move_it in your system. The example given below is for ros noetic distro
+
+
+        sudo apt update
+        sudo apt upgrade
+        sudo apt install-noetic-moveit
+
+- In this tutorial we used the the kuka lbr iiwa robot from the source linked below.
+
+        https://github.com/ros-industrial/kuka_experimental
+
+- Next step is to create your own move_it configuration package for the chosen robot. For the purpose of this tutorial we imported kuka robot description made necessary changes to the URDF file and created the move_it configuration package. Clone the repository given below in src folder of your catkin workspace and build the packages.Optionally you are free to choose your own robot and create the necessary move_it configuration package.
+
+        https://github.com/malwaru/kuka_manipulation
+
+- After completion of the setup build all packages then open three terminals in each terminal run one of the following launch files
+
+        roslaunch pybullet_ros move_it_sim.launch
+        roslaunch kuka_moveit_config move_group.launch
+        roslaunch kuka_moveit_config moveit_rviz.launch  
+
+- After running these three are running use Rviz to plan and execute trajectory by adding a MoveIt planner
+
+
 
 
 ## Visualize tf data and robot model in rviz
