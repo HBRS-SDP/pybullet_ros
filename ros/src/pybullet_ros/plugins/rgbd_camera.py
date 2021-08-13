@@ -13,6 +13,11 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import PointCloud2,PointField
 
+##Imports for static transform
+import tf
+import tf2_ros
+import geometry_msgs.msg
+
 
 class RGBDCamera:
     def __init__(self, pybullet, robot, **kargs):
@@ -58,6 +63,37 @@ class RGBDCamera:
         # variable used to run this plugin at a lower frequency, HACK
         self.count = 0
 
+
+        ## Setting TF static transform from camera to point cloud data direction
+
+        point_cloud_frame="point_cloud_camera"        
+        broadcaster = tf2_ros.StaticTransformBroadcaster()
+        static_transformStamped = geometry_msgs.msg.TransformStamped()
+        static_transformStamped.header.stamp = rospy.Time.now()
+        static_transformStamped.header.frame_id = cam_frame_id
+        static_transformStamped.child_frame_id = point_cloud_frame
+
+        static_transformStamped.transform.translation.x = 0
+        static_transformStamped.transform.translation.y = 0
+        static_transformStamped.transform.translation.z = 0
+
+        quat = tf.transformations.quaternion_from_euler(np.deg2rad(-90),0,0)
+        static_transformStamped.transform.rotation.x = quat[0]
+        static_transformStamped.transform.rotation.y = quat[1]
+        static_transformStamped.transform.rotation.z = quat[2]
+        static_transformStamped.transform.rotation.w = quat[3]       
+        broadcaster.sendTransform(static_transformStamped)
+
+
+
+
+
+
+
+
+
+
+
         # publisher for depth image
         self.pub_depth_image = rospy.Publisher('depth_image', Image, queue_size=1)
         # image msg for depth image
@@ -72,7 +108,7 @@ class RGBDCamera:
         self.pub_point_cloud = rospy.Publisher('point_cloud', PointCloud2, queue_size=1)
         # point cloud msg 
         self.point_cloud_msg = PointCloud2()
-        self.point_cloud_msg.header.frame_id = cam_frame_id
+        self.point_cloud_msg.header.frame_id = point_cloud_frame ## The new frame is the static frame 
         self.point_cloud_msg.width = rospy.get_param('~rgbd_camera/resolution/width',  640)
         self.point_cloud_msg.height = rospy.get_param('~rgbd_camera/resolution/height', 480)
         self.point_cloud_msg.fields = [PointField('x', 0, PointField.FLOAT32, 1),
