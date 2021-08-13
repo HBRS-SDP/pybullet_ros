@@ -13,8 +13,6 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import PointCloud2,PointField
 
-import pybullet_data
-
 
 class RGBDCamera:
     def __init__(self, pybullet, robot, **kargs):
@@ -139,11 +137,11 @@ class RGBDCamera:
         '''
         Inputs:
         -------
-        camera_image: Obtained from getCameraImage()
+        depth_image: Obtained from getCameraImage()
 
         Returns:
         --------
-        point_cloud: point cloud data ((x, y, z) values)
+        point_cloud: point cloud data, sized (width x height x 3)
         '''
         
         # calculate the focal length
@@ -165,7 +163,7 @@ class RGBDCamera:
             point_cloud_1.append(point_cloud_2) 
                     
         point_cloud = np.array(point_cloud_1)
-        print(point_cloud.shape)
+        # print(point_cloud.shape)
         return point_cloud.astype(np.float32)
 
     def compute_camera_target(self, camera_position, camera_orientation):
