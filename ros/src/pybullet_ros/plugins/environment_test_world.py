@@ -41,11 +41,11 @@ class Environment(DefaultEnv):
         self.pb.setPhysicsEngineParameter(sparseSdfVoxelSize=0.25) # ? related to soft bodies
         etc...
         """
-       ## Name of the world file you want to use 
-        world_file_name='test_world_v6.sdf'
+       ## Name of the world file to use 
+        world_file_name='test_world.sdf'
 
 
-        ## inding the path to the world
+        ## including the file path to the world
         rospack = rospkg.RosPack()
         rospack_path=rospack.get_path('pybullet_ros')
         rospack_path=rospack_path+'/common/test/sdf/worlds/'+world_file_name       
