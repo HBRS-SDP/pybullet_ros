@@ -5,11 +5,14 @@ RGBD camera sensor simulation for pybullet_ros base on pybullet.getCameraImage()
 """
 
 import math
+from os import cpu_count
 import numpy as np
 
 import rospy
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
+from sensor_msgs.msg import PointCloud2,PointField
+
 
 class RGBDCamera:
     def __init__(self, pybullet, robot, **kargs):
@@ -19,6 +22,7 @@ class RGBDCamera:
         self.robot = robot
         # create image msg placeholder for publication
         self.image_msg = Image()
+
         # get RGBD camera parameters from ROS param server
         self.image_msg.width = rospy.get_param('~rgbd_camera/resolution/width', 640)
         self.image_msg.height = rospy.get_param('~rgbd_camera/resolution/height', 480)
@@ -54,6 +58,32 @@ class RGBDCamera:
         # variable used to run this plugin at a lower frequency, HACK
         self.count = 0
 
+        # publisher for depth image
+        self.pub_depth_image = rospy.Publisher('depth_image', Image, queue_size=1)
+        # image msg for depth image
+        self.depth_image_msg = Image()
+        self.depth_image_msg.width = rospy.get_param('~rgbd_camera/resolution/width', 640)
+        self.depth_image_msg.height = rospy.get_param('~rgbd_camera/resolution/height', 480)
+        self.depth_image_msg.encoding = rospy.get_param('~rgbd_camera/resolution/encoding', '32FC1')
+        self.depth_image_msg.is_bigendian = rospy.get_param('~rgbd_camera/resolution/encoding', 0)
+        self.depth_image_msg.step = rospy.get_param('~rgbd_camera/resolution/encoding', 2560)
+
+        # publisher for point_cloud
+        self.pub_point_cloud = rospy.Publisher('point_cloud', PointCloud2, queue_size=1)
+        # point cloud msg 
+        self.point_cloud_msg = PointCloud2()
+        self.point_cloud_msg.header.frame_id = cam_frame_id
+        self.point_cloud_msg.width = rospy.get_param('~rgbd_camera/resolution/width',  640)
+        self.point_cloud_msg.height = rospy.get_param('~rgbd_camera/resolution/height', 480)
+        self.point_cloud_msg.fields = [PointField('x', 0, PointField.FLOAT32, 1),
+                                       PointField('y', 4, PointField.FLOAT32, 1),
+                                       PointField('z', 8, PointField.FLOAT32, 1)]
+        self.point_cloud_msg.is_bigendian = rospy.get_param('~rgbd_camera/resolution/encoding', 0)
+        self.point_cloud_msg.point_step = 12 
+        self.point_cloud_msg.row_step = self.point_cloud_msg.width * self.point_cloud_msg.point_step
+        self.point_cloud_msg.is_dense = True # organised point cloud
+        
+
     def compute_projection_matrix(self):
         return self.pb.computeProjectionMatrix(
                     left=-math.tan(math.pi * self.hfov / 360.0) * self.near_plane,
@@ -83,6 +113,59 @@ class RGBDCamera:
         # return frame
         return bgr_image.astype(np.uint8)
 
+    def extract_depth_frame(self, camera_image):
+        '''
+        Inputs:
+        -------
+        camera_image: Obtained from getCameraImage()
+
+        Returns:
+        --------
+        depth_image: Depth Image in cannonical form
+        '''
+        
+        depth_image = camera_image[3]
+        
+        # Get true depth value (https://stackoverflow.com/questions/6652253/getting-the-true-z-value-from-the-depth-buffer)
+        depth_image = self.far_plane * self.near_plane / ( self.far_plane - (self.far_plane - self.near_plane) * depth_image)
+
+        # return depth_image 
+        return depth_image.astype(np.float32) 
+
+
+    def image_to_pointcloud(self, depth_image):
+        '''
+        Inputs:
+        -------
+        depth_image: Obtained from getCameraImage()
+
+        Returns:
+        --------
+        point_cloud: point cloud data, sized (width x height x 3)
+        '''
+        
+        # calculate the focal length
+        y1_x = self.depth_image_msg.width / 2
+        y1_y = self.depth_image_msg.height / 2
+        focalLength_x = y1_x / np.tan(np.deg2rad(self.hfov)/2)
+        focalLength_y = y1_y / np.tan(np.deg2rad(self.vfov)/2)
+
+        # get the point cloud
+        point_cloud_1 = []
+        for v in range(depth_image.shape[0]):
+            point_cloud_2 = []
+            for u in range(depth_image.shape[1]):
+                z = depth_image[v,u]
+                x = (u - self.depth_image_msg.width / 2) * z / focalLength_x    
+                y = (v - self.depth_image_msg.height / 2) * z / focalLength_y
+
+                point_cloud_2.append([x, y, z]) 
+            point_cloud_1.append(point_cloud_2) 
+                    
+        point_cloud = np.array(point_cloud_1)
+        # print(point_cloud.shape)
+        return point_cloud.astype(np.float32)
+
     def compute_camera_target(self, camera_position, camera_orientation):
         """
         camera target is a point 5m in front of the robot camera
@@ -97,6 +180,7 @@ class RGBDCamera:
 
     def execute(self):
         """this function gets called from pybullet ros main update loop"""
+
         # run at lower frequency, camera computations are expensive
         self.count += 1
         if self.count < 100:
@@ -122,3 +206,20 @@ class RGBDCamera:
         self.image_msg.header.stamp = rospy.Time.now()
         # publish camera image to ROS network
         self.pub_image.publish(self.image_msg)
+
+        # Extract depth image/frame
+        frame_depth = self.extract_depth_frame(pybullet_cam_resp)
+        # fill pixel data array
+        self.depth_image_msg.data = self.image_bridge.cv2_to_imgmsg(frame_depth, encoding="32FC1").data
+        # update msg time stamp
+        self.depth_image_msg.header.stamp = rospy.Time.now()
+        # publish depth image to ROS network
+        self.pub_depth_image.publish(self.depth_image_msg)
+
+        # update msg time stamp
+        self.point_cloud_msg.header.stamp = rospy.Time.now()
+        # Get point cloud from depth image
+        self.point_cloud_msg.data = self.image_to_pointcloud(frame_depth).tostring()
+        # publish point cloud to ROS n/w
+        self.pub_point_cloud.publish(self.point_cloud_msg)
+
