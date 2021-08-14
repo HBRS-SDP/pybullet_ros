@@ -97,7 +97,12 @@ Done. The robot should now move in velocity or effort control mode with the desi
 
         https://github.com/malwaru/kuka_manipulation
 
-- After completion of the setup build all packages then open three terminals in each terminal run one of the following launch files
+
+- So far the configurations has been set up to work with move_it and pybullet but the controller that connect the action execution between pybullet and moveit is not complete. To see a demonstration with  fake controllers and see the the robot in action run the following command 
+
+        roslaunch kuka_moveit demo.launch
+
+- If the controllers are built use the following commands to see the actual output. Build all packages then open three terminals in each terminal run one of the following launch files
 
         roslaunch pybullet_ros move_it_sim.launch
         roslaunch kuka_moveit_config move_group.launch
