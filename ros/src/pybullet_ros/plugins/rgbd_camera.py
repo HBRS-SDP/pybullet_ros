@@ -64,8 +64,7 @@ class RGBDCamera:
         self.count = 0
 
 
-        ## Setting TF static transform from camera to point cloud data direction
-
+        ## Setting TF static transform from camera to point cloud data in required direction
         point_cloud_frame="point_cloud_camera"        
         broadcaster = tf2_ros.StaticTransformBroadcaster()
         static_transformStamped = geometry_msgs.msg.TransformStamped()
@@ -83,16 +82,6 @@ class RGBDCamera:
         static_transformStamped.transform.rotation.z = quat[2]
         static_transformStamped.transform.rotation.w = quat[3]       
         broadcaster.sendTransform(static_transformStamped)
-
-
-
-
-
-
-
-
-
-
 
         # publisher for depth image
         self.pub_depth_image = rospy.Publisher('depth_image', Image, queue_size=1)
