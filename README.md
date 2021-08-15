@@ -179,7 +179,14 @@ The setting needed for move_base is given as an example here
 
 - After running these three are running use Rviz to plan and execute trajectory by adding a MoveIt planner
 
+## Publishing the Depth Image & Point Cloud 
+- First launch the pybullet simulator
 
+        roslaunch pybullet_ros move_base_sim.launch
+
+- Then launch Rviz to view the image and point cloud
+
+        roslaunch depth_image_point_cloud.launch  
 
 
 ## Visualize tf data and robot model in rviz

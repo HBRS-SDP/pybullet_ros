@@ -65,7 +65,7 @@ class RGBDCamera:
 
 
         ## Setting TF static transform from camera to point cloud data in required direction
-        point_cloud_frame="point_cloud_camera"        
+        point_cloud_frame = "point_cloud_camera"        
         broadcaster = tf2_ros.StaticTransformBroadcaster()
         static_transformStamped = geometry_msgs.msg.TransformStamped()
         static_transformStamped.header.stamp = rospy.Time.now()
