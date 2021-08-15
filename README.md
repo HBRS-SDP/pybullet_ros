@@ -14,7 +14,6 @@ This project is in a medium stage and presents with the following features:
 
 Missing:
 
-- sensors: Depth information (pointcloud)
 - [sdf](http://sdformat.org) support
 
 Main implementation is done [here](https://github.com/oscar-lima/pybullet_ros/blob/noetic/ros/src/pybullet_ros/pybullet_ros.py)
@@ -214,6 +213,10 @@ with [position, velocity, effort] - Using the control plugin, you can publish a 
 and the robot will forward the instruction to the robot joint.
 
 ```/rgb_image``` - The camera image of type (sensor_msgs/Image)
+
+```/depth_image``` - The depth image of type (sensor_msgs/Image)
+
+```/point_cloud``` - The point cloud of type (sensor_msgs/PointCloud2)
 
 ## Services offered by this node
 
