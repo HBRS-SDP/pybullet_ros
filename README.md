@@ -156,7 +156,7 @@ The setting needed for move_base is given as an example here
 
         sudo apt update
         sudo apt upgrade
-        sudo apt install-noetic-moveit
+        sudo apt install ros-noetic-moveit
 
 - In this tutorial we used the the kuka lbr iiwa robot from the source linked below.
 
