@@ -186,7 +186,7 @@ The setting needed for move_base is given as an example here
 
 - Then launch Rviz to view the image and point cloud
 
-        roslaunch depth_image_point_cloud.launch  
+        roslaunch pybullet_ros depth_image_point_cloud.launch  
 
 
 ## Visualize tf data and robot model in rviz
